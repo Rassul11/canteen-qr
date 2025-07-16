@@ -2,165 +2,64 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Учёт питания</title>
   <style>
     body {
-      background-color: #001f3f;
-      color: white;
-      font-family: Arial, sans-serif;
+      font-family: sans-serif;
+      background: #f5f5f5;
       text-align: center;
-      padding: 20px;
+      padding: 40px;
     }
-
-    #logo {
-      max-width: 180px;
-      margin-bottom: 15px;
+    input, button {
+      font-size: 16px;
+      padding: 10px;
+      margin: 10px;
+      width: 200px;
     }
-
-    input, select, button {
-      width: 90%;
-      max-width: 400px;
-      padding: 15px;
-      margin: 10px auto;
-      display: block;
-      border: none;
-      border-radius: 5px;
-      font-size: 18px;
-    }
-
-    button {
-      background-color: #FF851B;
-      color: white;
+    #result {
+      margin-top: 20px;
       font-weight: bold;
     }
-
-    #successMessage {
-      font-size: 26px;
-      color: #2ECC40;
-      margin-top: 20px;
-    }
-
-    #alreadyMessage {
-      font-size: 22px;
-      color: #FF4136;
-      margin-top: 20px;
-    }
-
-    .hidden { display: none; }
   </style>
 </head>
 <body>
+  <h1>📋 Учёт питания</h1>
 
-  <img src="logo.png" id="logo" alt="Логотип" />
-  <h1>🍽️ Учёт питания</h1>
+  <input type="text" id="firstName" placeholder="Имя" required><br>
+  <input type="text" id="lastName" placeholder="Фамилия" required><br>
+  <input type="text" id="personnelNumber" placeholder="Таб. номер (необязательно)"><br>
+  <input type="text" id="company" placeholder="Компания" required><br>
 
-  <div id="formSection">
-    <input id="firstName" placeholder="Имя" required>
-    <input id="lastName" placeholder="Фамилия" required>
-    <input id="personnelNumber" placeholder="Табельный номер (если есть)">
-    
-    <select id="company" onchange="toggleCustomCompany()">
-      <option value="">Выберите компанию</option>
-      <option value="KAL">KAL</option>
-      <option value="KBL">KBL</option>
-      <option value="KMM">KMM</option>
-      <option value="Mediker">Mediker</option>
-      <option value="custom">Другое</option>
-    </select>
-
-    <input id="customCompany" class="hidden" placeholder="Введите свою компанию">
-    <button onclick="sendData()">Я пришёл</button>
-  </div>
-
-  <div id="successMessage" class="hidden">✅ Приятного аппетита!</div>
-  <div id="alreadyMessage" class="hidden"></div>
-  <button id="editBtn" class="hidden" onclick="resetForm()">✏️ Редактировать</button>
+  <button onclick="sendData()">Я пришёл</button>
+  <div id="result"></div>
 
   <script>
-    const form = document.getElementById('formSection');
-    const successMessage = document.getElementById('successMessage');
-    const alreadyMessage = document.getElementById('alreadyMessage');
-    const editBtn = document.getElementById('editBtn');
-    const companySelect = document.getElementById('company');
-    const customCompany = document.getElementById('customCompany');
-
-    const endpoint = 'https://script.google.com/macros/s/AKfycbwKTvXe6irS4BZ7o1gM560dtHkyunAcUyy9MTesE3LmI7gG2A2QbQWzoMHWmxr16Hw/exec';
-
-    window.onload = () => {
-      const saved = JSON.parse(localStorage.getItem('userData'));
-      if (saved) {
-        document.getElementById('firstName').value = saved.firstName;
-        document.getElementById('lastName').value = saved.lastName;
-        document.getElementById('personnelNumber').value = saved.personnelNumber;
-        if (["KAL", "KBL", "KMM", "Mediker"].includes(saved.company)) {
-          companySelect.value = saved.company;
-        } else {
-          companySelect.value = "custom";
-          customCompany.classList.remove('hidden');
-          customCompany.value = saved.company;
-        }
-        form.classList.add('hidden');
-        editBtn.classList.remove('hidden');
-        sendData(); // автоотправка
-      }
-    };
-
-    function toggleCustomCompany() {
-      if (companySelect.value === "custom") {
-        customCompany.classList.remove('hidden');
-      } else {
-        customCompany.classList.add('hidden');
-      }
-    }
-
-    function sendData() {
-      const firstName = document.getElementById('firstName').value.trim();
-      const lastName = document.getElementById('lastName').value.trim();
-      const personnelNumber = document.getElementById('personnelNumber').value.trim();
-      const selectedCompany = companySelect.value === "custom" ? customCompany.value.trim() : companySelect.value;
-
-      if (!firstName || !lastName || !selectedCompany) {
-        alert("Заполните все обязательные поля");
-        return;
-      }
-
+    async function sendData() {
       const data = {
-        firstName,
-        lastName,
-        personnelNumber,
-        company: selectedCompany
+        firstName: document.getElementById("firstName").value.trim(),
+        lastName: document.getElementById("lastName").value.trim(),
+        personnelNumber: document.getElementById("personnelNumber").value.trim(),
+        company: document.getElementById("company").value.trim()
       };
 
-      localStorage.setItem('userData', JSON.stringify(data));
+      const resultBox = document.getElementById("result");
+      resultBox.textContent = "⏳ Отправка...";
 
-      fetch(endpoint, {
-        method: 'POST',
-        body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json' }
-      })
-      .then(res => res.json())
-      .then(res => {
-        if (res.status === "ok") {
-          successMessage.classList.remove('hidden');
-          alreadyMessage.classList.add('hidden');
-        } else if (res.status === "already") {
-          successMessage.classList.add('hidden');
-          alreadyMessage.classList.remove('hidden');
-          alreadyMessage.innerText = res.message;
-        } else {
-          alert("Ошибка сервера");
-        }
-      })
-      .catch(err => {
-        alert("Ошибка подключения");
-        console.error(err);
-      });
-    }
+      try {
+        const response = await fetch("https://script.google.com/macros/s/AKfycbxRTZzPdyHvFyTMlUcn1vY7Ye-Xriv5iWUeSY8oX-B-QRWp-NgriakXRodkqTjMKpYB/exec", {
+          method: "POST",
+          mode: "no-cors", // Временно, если будет CORS ошибка — поменяем
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
 
-    function resetForm() {
-      localStorage.removeItem('userData');
-      location.reload();
+        // Поскольку no-cors, мы не получим ответ — выводим просто "отправлено"
+        resultBox.textContent = "✅ Данные отправлены";
+      } catch (error) {
+        console.error(error);
+        resultBox.textContent = "❌ Ошибка отправки данных";
+      }
     }
   </script>
 </body>
